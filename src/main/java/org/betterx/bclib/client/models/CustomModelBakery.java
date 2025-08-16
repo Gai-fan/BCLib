@@ -33,43 +33,43 @@ public class CustomModelBakery {
 
     public void loadCustomModels(ResourceManager resourceManager) {
         BuiltInRegistries.BLOCK.stream()
-                               .parallel()
-                               .filter(block -> block instanceof BlockModelProvider)
-                               .forEach(block -> {
-                                   ResourceLocation blockID = BuiltInRegistries.BLOCK.getKey(block);
-                                   ResourceLocation storageID = new ResourceLocation(
-                                           blockID.getNamespace(),
-                                           "blockstates/" + blockID.getPath() + ".json"
-                                   );
-                                   if (resourceManager.getResource(storageID).isEmpty()) {
-                                       addBlockModel(blockID, block);
-                                   }
-                                   storageID = new ResourceLocation(
-                                           blockID.getNamespace(),
-                                           "models/item/" + blockID.getPath() + ".json"
-                                   );
-                                   if (resourceManager.getResource(storageID).isEmpty()) {
-                                       addItemModel(blockID, (ItemModelProvider) block);
-                                   }
-                               });
+                .parallel()
+                .filter(block -> block instanceof BlockModelProvider)
+                .forEach(block -> {
+                    ResourceLocation blockID = BuiltInRegistries.BLOCK.getKey(block);
+                    ResourceLocation storageID = new ResourceLocation(
+                            blockID.getNamespace(),
+                            "blockstates/" + blockID.getPath() + ".json"
+                    );
+                    if (resourceManager.getResource(storageID).isEmpty()) {
+                        addBlockModel(blockID, block);
+                    }
+                    storageID = new ResourceLocation(
+                            blockID.getNamespace(),
+                            "models/item/" + blockID.getPath() + ".json"
+                    );
+                    if (resourceManager.getResource(storageID).isEmpty()) {
+                        addItemModel(blockID, (ItemModelProvider) block);
+                    }
+                });
 
         BuiltInRegistries.ITEM.stream()
-                              .parallel()
-                              .filter(item -> item instanceof ItemModelProvider || RecordItemModelProvider.has(item))
-                              .forEach(item -> {
-                                  ResourceLocation registryID = BuiltInRegistries.ITEM.getKey(item);
-                                  ResourceLocation storageID = new ResourceLocation(
-                                          registryID.getNamespace(),
-                                          "models/item/" + registryID.getPath() + ".json"
-                                  );
-                                  final ItemModelProvider provider = (item instanceof ItemModelProvider)
-                                          ? (ItemModelProvider) item
-                                          : RecordItemModelProvider.get(item);
+                .parallel()
+                .filter(item -> item instanceof ItemModelProvider || RecordItemModelProvider.has(item))
+                .forEach(item -> {
+                    ResourceLocation registryID = BuiltInRegistries.ITEM.getKey(item);
+                    ResourceLocation storageID = new ResourceLocation(
+                            registryID.getNamespace(),
+                            "models/item/" + registryID.getPath() + ".json"
+                    );
+                    final ItemModelProvider provider = (item instanceof ItemModelProvider)
+                            ? (ItemModelProvider) item
+                            : RecordItemModelProvider.get(item);
 
-                                  if (resourceManager.getResource(storageID).isEmpty()) {
-                                      addItemModel(registryID, provider);
-                                  }
-                              });
+                    if (resourceManager.getResource(storageID).isEmpty()) {
+                        addItemModel(registryID, provider);
+                    }
+                });
     }
 
     private void addBlockModel(ResourceLocation blockID, Block block) {
@@ -83,15 +83,20 @@ public class CustomModelBakery {
         if (defaultModel instanceof MultiPart) {
             states.forEach(blockState -> {
                 ResourceLocation stateID = BlockModelShaper.stateToModelLocation(blockID, blockState);
-                models.put(stateID, defaultModel);
+                if (stateID != null) {                     
+                    models.put(stateID, defaultModel);
+                }
             });
         } else {
             states.forEach(blockState -> {
                 ResourceLocation stateID = BlockModelShaper.stateToModelLocation(blockID, blockState);
+                if (stateID == null) return;              
                 UnbakedModel model = stateID.equals(defaultStateID)
                         ? defaultModel
                         : provider.getModelVariant(stateID, blockState, models);
-                models.put(stateID, model);
+                if (model != null) {                        
+                    models.put(stateID, model);
+                }
             });
         }
     }
@@ -102,10 +107,12 @@ public class CustomModelBakery {
                 itemID.getPath(),
                 "inventory"
         );
-        if (models.containsKey(modelLocation)) {
+        if (modelLocation == null || models.containsKey(modelLocation)) {  
             return;
         }
         BlockModel model = provider.getItemModel(modelLocation);
-        models.put(modelLocation, model);
+        if (model != null) {                                                
+            models.put(modelLocation, model);
+        }
     }
 }
